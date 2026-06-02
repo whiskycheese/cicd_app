@@ -1,0 +1,84 @@
+name: Gemini Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+
+jobs:
+  ai-review:
+    # 修正前：contains(github.event.comment.body, '@claude')
+    # 👇 修正後：@gemini に変更！
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' && 
+       github.event.issue.pull_request && 
+       contains(github.event.comment.body, '@gemini'))
+    
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR Diff
+        id: get_diff
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.event.pull_request.base.ref }}
+            DIFF=$(git diff origin/${{ github.event.pull_request.base.ref }}...HEAD)
+          else
+            PR_NUM=${{ github.event.issue.number }}
+            URL="https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUM}"
+            BASE_REF=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" $URL | jq -r .base.ref)
+            git fetch origin ${BASE_REF}
+            DIFF=$(git diff origin/${BASE_REF}...HEAD)
+          fi
+          
+          echo "PR_DIFF<<EOF" >> $GITHUB_ENV
+          echo "$DIFF" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Ask Gemini for Review
+        if: env.PR_DIFF != ''
+        uses: actions/github-script@v7
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        with:
+          script: |
+            const diff = process.env.PR_DIFF;
+            const prompt = `あなたは超一流のシニアフロントエンドエンジニアです。提供されたGitの差分（diff）をレビューし、以下の重要度（Severity）に分けて具体的かつ優しく日本語で指摘してください。【重要度の定義】🚨 CRITICAL (バグ・脆弱性): アプリがクラッシュする致命的なバグや、セキュリティリスク。絶対直すべき箇所。⚠️ MAJOR (改善・規約違反): パフォーマンスの低下、Biomeのルール違反（無駄な!マークなど）、予期せぬ動作を引き起こす可能性のある実装。💡 MINOR (提案・リファクタ): 可読性の向上、よりモダンでスッキリした書き方の提案など。✨ GOOD (称賛): 綺麗に書けている部分や、良いアプローチ。【出力ルール】- マークダウン形式で見出しを使って、重要度ごとに箇条書きで出力してください。- 該当する指摘がない重要度は出力から省略してください。- ファイル名や行数がわかる場合は明記してください。対象の差分：\n${diff}`;
+
+            // Google Gemini APIを直接叩く
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+            
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+              })
+            });
+
+            const data = await response.json();
+            
+            if (!data.candidates || data.candidates.length === 0) {
+              throw new Error("Geminiからの応答が空でした: " + JSON.stringify(data));
+            }
+            
+            const reviewResult = data.candidates[0].content.parts[0].text;
+            const prNumber = context.issue.number || context.payload.pull_request.number;
+
+            // PRにコメントを投稿
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `### 🤖 Gemini AI コードレビュー (完全無料版)\n\n${reviewResult}`
+            });
