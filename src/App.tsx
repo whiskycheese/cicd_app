@@ -1,5 +1,10 @@
 function App() {
-  return <div>This is a test</div>  
+	return (
+		<>
+			<div>This is a test</div>
+			<div>This is a test 2</div>
+		</>
+	);
 }
 
-export default App
+export default App;
