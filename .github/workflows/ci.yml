@@ -1,0 +1,36 @@
+name: CI Pipeline
+
+# 🚀 トリガー：どのタイミングでこのロボットを動かすか
+on:
+  push:
+    branches: [ main ]  # mainブランチにプッシュされたとき
+  pull_request:
+    branches: [ main ]  # mainブランチに向けてPRが作られたとき
+
+jobs:
+  continuous-integration:
+    runs-on: ubuntu-latest # クラウド上のLinuxマシン（Ubuntu）で実行
+
+    steps:
+      # 1. GitHubからコードをダウンロードしてくる
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. ロボットにNode.jsの環境を作る（あなたの環境と同じv22を指定）
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: 'npm' # インストールを速くするためのキャッシュ設定
+
+      # 3. 依存ライブラリをクリーンインストール
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Biomeを使って、コードが綺麗か（エラーがないか）チェック
+      - name: Run Biome Check
+        run: npx @biomejs/biome check .
+
+      # 5. Viteを使って、本番公開用のファイルをビルドできるかチェック
+      - name: Build App
+        run: npm run build
