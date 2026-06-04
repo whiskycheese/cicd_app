@@ -26,32 +26,35 @@ jobs:
             const eventName = context.eventName;
             let message = "";
 
-            // 1. Push通知
+            // 1. mainブランチへの直プッシュ・マージの通知
             if (eventName === 'push') {
               message = `🚀 **${context.actor}** が \`main\` にプッシュしました！\n🔗 [変更の差分を見る](${context.payload.compare})`;
             } 
-            // 2. PR関連（作成・マージ）
+            // 2. PR関連（作成・マージ・★追加プッシュ）の通知
             else if (eventName === 'pull_request') {
               const action = context.payload.action;
               const pr = context.payload.pull_request;
+              
               if (action === 'opened') {
                 message = `📫 **${context.actor}** がPRを作成しました:\n**[${pr.title}]**\n🔗 ${pr.html_url}`;
-              } else if (action === 'closed' && pr.merged) {
+              } 
+              // 👇 ここを追加することで、PR中のプッシュも検知できるようになります！
+              else if (action === 'synchronize') {
+                message = `🔄 **${context.actor}** がPRに新しいコミットをプッシュしました:\n**[${pr.title}]**\n🔗 ${pr.html_url}`;
+              } 
+              else if (action === 'closed' && pr.merged) {
                 message = `🎉 **${context.actor}** のPRが無事にマージされました！:\n**[${pr.title}]**\n🔗 ${pr.html_url}`;
               }
             } 
             // 3. コメント通知
-            else if (eventName === 'issue_comment') {
+            else if (eventName === 'issue_comment' || eventName === 'pull_request_review_comment') {
               const comment = context.payload.comment;
-              // 長いコメントは省略して表示
               const body = comment.body.length > 50 ? comment.body.substring(0, 50) + '...' : comment.body;
               message = `💬 **${context.actor}** がコメントしました:\n> ${body}\n🔗 [確認する](${comment.html_url})`;
             }
 
-            // メッセージが空（対象外のイベント）の場合は送信しない
             if (!message) return;
 
-            // Discordへ送信
             await fetch(webhookUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
