@@ -8,13 +8,13 @@ on:
 
 jobs:
   ai-review:
-    # 修正前：contains(github.event.comment.body, '@claude')
-    # 👇 修正後：@gemini に変更！
     if: |
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' && 
-       github.event.issue.pull_request && 
-       contains(github.event.comment.body, '@gemini'))
+      github.actor != 'dependabot[bot]' && (
+        github.event_name == 'pull_request' ||
+        (github.event_name == 'issue_comment' && 
+         github.event.issue.pull_request && 
+         contains(github.event.comment.body, '@gemini'))
+      )
     
     runs-on: ubuntu-latest
     permissions:
