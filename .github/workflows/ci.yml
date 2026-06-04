@@ -31,6 +31,10 @@ jobs:
       - name: Run Biome Check
         run: npx @biomejs/biome check .
 
-      # 5. Viteを使って、本番公開用のファイルをビルドできるかチェック
+      # 5. 自動テストの実行
+      - name: Run Tests
+        run: npm run test:run
+
+      # 6. Viteを使って、本番公開用のファイルをビルドできるかチェック
       - name: Build App
         run: npm run build

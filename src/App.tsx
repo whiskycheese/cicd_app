@@ -1,9 +1,15 @@
+import { useState } from "react";
+
 function App() {
+	const [count, setCount] = useState(0);
+
 	return (
-		<>
-			<div>This is a test</div>
-			<div>This is a test 2</div>
-		</>
+		<main>
+			<p>Count: {count}</p>
+			<button type="button" onClick={() => setCount((c) => c + 1)}>
+				Increment
+			</button>
+		</main>
 	);
 }
 
