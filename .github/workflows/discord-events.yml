@@ -1,0 +1,62 @@
+name: Discord Event Notifications
+
+on:
+  push:
+    branches: [ main ] # mainに直Pushされた時
+  pull_request:
+    types: [opened, closed, synchronize] # PR作成時とクローズ（マージ）時
+  issue_comment:
+    types: [created] # コメントされた時
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification to Discord
+        uses: actions/github-script@v7
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        with:
+          script: |
+            const webhookUrl = process.env.WEBHOOK_URL;
+            if (!webhookUrl) return;
+
+            const eventName = context.eventName;
+            let message = "";
+
+            // 1. mainブランチへの直プッシュ・マージの通知
+            if (eventName === 'push') {
+              message = `🚀 **${context.actor}** が \`main\` にプッシュしました！\n🔗 [変更の差分を見る](${context.payload.compare})`;
+            } 
+            // 2. PR関連（作成・マージ・★追加プッシュ）の通知
+            else if (eventName === 'pull_request') {
+              const action = context.payload.action;
+              const pr = context.payload.pull_request;
+              
+              if (action === 'opened') {
+                message = `📫 **${context.actor}** がPRを作成しました:\n**[${pr.title}]**\n🔗 ${pr.html_url}`;
+              } 
+              // 👇 ここを追加することで、PR中のプッシュも検知できるようになります！
+              else if (action === 'synchronize') {
+                message = `🔄 **${context.actor}** がPRに新しいコミットをプッシュしました:\n**[${pr.title}]**\n🔗 ${pr.html_url}`;
+              } 
+              else if (action === 'closed' && pr.merged) {
+                message = `🎉 **${context.actor}** のPRが無事にマージされました！:\n**[${pr.title}]**\n🔗 ${pr.html_url}`;
+              }
+            } 
+            // 3. コメント通知
+            else if (eventName === 'issue_comment' || eventName === 'pull_request_review_comment') {
+              const comment = context.payload.comment;
+              const body = comment.body.length > 50 ? comment.body.substring(0, 50) + '...' : comment.body;
+              message = `💬 **${context.actor}** がコメントしました:\n> ${body}\n🔗 [確認する](${comment.html_url})`;
+            }
+
+            if (!message) return;
+
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: message })
+            });
