@@ -38,3 +38,29 @@ jobs:
       # 6. Viteを使って、本番公開用のファイルをビルドできるかチェック
       - name: Build App
         run: npm run build
+
+      # ▼一番最後にこれを追加▼
+      - name: Send CI Result to Discord
+        if: always() # 成功・失敗に関わらず絶対に実行する
+        uses: actions/github-script@v7
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          STATUS: ${{ job.status }} # success, failure, cancelled のいずれかが入る
+        with:
+          script: |
+            const status = process.env.STATUS;
+            const webhookUrl = process.env.WEBHOOK_URL;
+            if (!webhookUrl) return;
+
+            // ステータスに応じてアイコンと文言を変更
+            const isSuccess = status === 'success';
+            const icon = isSuccess ? '✅' : '❌';
+            const text = isSuccess ? '成功しました！' : '失敗しました...ログを確認してください。';
+            
+            const message = `${icon} **CI/CDパイプライン** が完了・終了しました。\n結果: **${status}** (${text})\n🔗 [GitHub Actionsのログを見る](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+            
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: message })
+            });
