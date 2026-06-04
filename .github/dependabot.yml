@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # 1. npm（package.json）のライブラリを定期チェックする
+  - package-ecosystem: "npm"
+    directory: "/" 
+    schedule:
+      interval: "weekly" 
+      day: "thursday"      
+      time: "14:15"      
+      timezone: "Asia/Tokyo"
