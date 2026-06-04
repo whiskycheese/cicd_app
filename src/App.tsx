@@ -9,6 +9,9 @@ function App() {
 			<button type="button" onClick={() => setCount((c) => c + 1)}>
 				Increment
 			</button>
+			<button type="button" onClick={() => setCount(0)}>
+				Reset
+			</button>
 		</main>
 	);
 }
