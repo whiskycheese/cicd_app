@@ -1,17 +1,14 @@
-import { useState } from "react";
+import { Link } from "react-router-dom";
+import { AppRoutes, ROUTES } from "./routes/index.ts";
 
 function App() {
-	const [count, setCount] = useState(0);
-
 	return (
 		<main>
-			<p>Count: {count}</p>
-			<button type="button" onClick={() => setCount((c) => c + 1)}>
-				Increment
-			</button>
-			<button type="button" onClick={() => setCount(0)}>
-				Reset
-			</button>
+			<nav>
+				<Link to={ROUTES.count}>Count</Link>
+				<Link to={ROUTES.about}>About</Link>
+			</nav>
+			<AppRoutes />
 		</main>
 	);
 }
