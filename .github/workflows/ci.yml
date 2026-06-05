@@ -30,15 +30,15 @@ jobs:
       - name: Run Biome Check
         run: npx @biomejs/biome check .
 
-      # 5. 自動テストの実行
-      - name: Run Tests
+      # 5. ユニットテストの実行
+      - name: Run Unit Tests
         run: npm run test:run
-
-      # 6. Viteを使って、本番公開用のファイルをビルドできるかチェック
+        
+      # 8. Viteを使って、本番公開用のファイルをビルドできるかチェック
       - name: Build App
         run: npm run build
 
-      # ▼一番最後にこれを追加▼
+      # ▼ Discord 通知（成功・失敗に関わらず実行）
       - name: Send CI Result to Discord
         if: always() # 成功・失敗に関わらず絶対に実行する
         uses: actions/github-script@v7
