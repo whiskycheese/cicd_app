@@ -1,11 +1,10 @@
 name: CI Pipeline
 
-# 🚀 トリガー：どのタイミングでこのロボットを動かすか
 on:
   push:
-    branches: [ main ]  # mainブランチにプッシュされたとき
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main ]  # mainブランチに向けてPRが作られたとき
+    branches: [ main, dev ]
 
 jobs:
   continuous-integration:
