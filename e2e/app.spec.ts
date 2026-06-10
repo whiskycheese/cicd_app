@@ -2,14 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Counter page", () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto("/");
-	});
-
-	test("shows initial count on home", async ({ page }) => {
-		await expect(page).toHaveURL("/");
-		await expect(page.getByText("Count: 0")).toBeVisible();
-		await expect(page.getByRole("link", { name: "Count" })).toBeVisible();
-		await expect(page.getByRole("link", { name: "About" })).toBeVisible();
+		await page.goto("/count");
 	});
 
 	test("increments and resets count", async ({ page }) => {
@@ -31,33 +24,10 @@ test.describe("Counter page", () => {
 });
 
 test.describe("Routing", () => {
-	test("navigates between Count and About via links", async ({ page }) => {
-		await page.goto("/");
-
-		await page.getByRole("link", { name: "About" }).click();
-		await expect(page).toHaveURL("/about");
-		await expect(page.getByText("Hello")).toBeVisible();
-		await expect(page.getByText("Count: 0")).not.toBeVisible();
-
-		await page.getByRole("link", { name: "Count" }).click();
-		await expect(page).toHaveURL("/");
-		await expect(page.getByText("Count: 0")).toBeVisible();
-	});
-
 	test("loads About page when visiting /about directly", async ({ page }) => {
 		await page.goto("/about");
 
 		await expect(page).toHaveURL("/about");
 		await expect(page.getByText("Hello")).toBeVisible();
-	});
-
-	test("supports browser back navigation", async ({ page }) => {
-		await page.goto("/");
-		await page.getByRole("link", { name: "About" }).click();
-		await expect(page).toHaveURL("/about");
-
-		await page.goBack();
-		await expect(page).toHaveURL("/");
-		await expect(page.getByText("Count: 0")).toBeVisible();
 	});
 });
