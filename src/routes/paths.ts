@@ -1,4 +1,5 @@
 export const ROUTES = {
-	count: "/",
+	top: "/",
+	count: "/count",
 	about: "/about",
 } as const;
